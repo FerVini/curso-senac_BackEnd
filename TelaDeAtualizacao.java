@@ -11,9 +11,11 @@ public class TelaDeAtualizacao extends JFrame {
 
     public static JLabel lblNome;
     public static JTextField txtNome;
-
+    public static String txtNomeCarregado;
+    
     public static JLabel lblEmail;
     public static JTextField txtEmail;
+    public static String txtEmailCarregado;
 
     public static JLabel lblSenha;
     public static JPasswordField txtSenha;
@@ -48,6 +50,8 @@ public class TelaDeAtualizacao extends JFrame {
         
         lblEmail = new JLabel("Email:", SwingConstants.RIGHT);
         addComponent(lblEmail, 2, 0, 1, 1);
+
+        atualizarCampos();
         
         txtEmail = new JTextField(10);
         addComponent(txtEmail,2, 1, 1, 1);
@@ -59,6 +63,7 @@ public class TelaDeAtualizacao extends JFrame {
         addComponent(txtSenha,3, 1, 1, 1);
         
         btnAtualizar = new JButton("Atualizar");
+        btnAtualizar.setEnabled(false);
         addComponent(btnAtualizar,4, 0, 1, 1);
         
         btnCancelar = new JButton("Cancelar");
@@ -71,8 +76,72 @@ public class TelaDeAtualizacao extends JFrame {
             new ItemListener() {
                 @Override
                 public void itemStateChanged(ItemEvent event) {
+                    
                     if(event.getStateChange() == ItemEvent.SELECTED) {
                         atualizarCampos(String.valueOf(cbxId.getSelectedItem()));
+                    }
+                }
+            }
+        );
+
+        btnAtualizar.addActionListener(
+            new ActionListener() {
+                @Override
+
+                public void actionPerformed(ActionEvent event){
+                    try {
+                        Connection conexao = MySQLConnector.conectar();
+                        if(String.valueOf(txtSenha.getPassword().trim().length() > 0)) { 
+                            atualizarSenha = ", `senha` = '" + String.valueOf(txtSenha.getPassword()).trim() + "'";
+                        }
+                        String strSqlAtualizarId = "update `db_senac`.`tbl_senac` set `nome` = '" + txtNome.getText().trim() + "', `email = '" + txtEmail.getText().trim() + "'" + atualizarSenha + " where `id` = " + String.valueOf(cbxId.getSelectedItem()) + ";";
+                        Statement stmSqlAtualizarId = conexao.createStatement();
+                        stmSqlAtualizarId.addBatch(strSqlAtualizarId);
+                        stmSqlAtualizarId.executeBatch(strSqlAtualizarId);
+                        txtNomeCarregado = txtNome.getText().trim();
+                        txtEmailCarregado = txtEmail.getText().trim();
+                        notificarUsuario("O id foi atualizado com sucesso");
+                    } catch(Exception e) {
+                        notificarUsuario("Ops! problema no servidor");
+                    }
+                }
+            };
+        );
+
+        txtNome.addKeyListener(
+            new KeyAdapter() {
+                @Override
+                public void keyReleased(KeyEvent e) {
+                    if (txtNomeCarregado.trim().equals(txtNome.getText().trim())){
+                        btnAtualizar.setEnabled(false);
+                    } else {
+                        btnAtualizar.setEnabled(true);
+                    }
+                }
+            }
+        );
+        
+        txtEmail.addKeyListener(
+            new KeyAdapter() {
+                @Override
+                public void keyReleased(KeyEvent e) {
+                    if (txtEmailCarregado.trim().equals(txtEmail.getText().trim())){
+                        btnAtualizar.setEnabled(false);
+                    } else {
+                        btnAtualizar.setEnabled(true);
+                    }
+                }
+            }
+        );
+        
+        txtSenha.addKeyListener(
+            new KeyAdapter() {
+                @Override
+                public void keyReleased(KeyEvent e) {
+                    if (String.valueOf(txtSenha.getPassword()).trim().length() == 0){
+                        btnAtualizar.setEnabled(false);
+                    } else {
+                        btnAtualizar.setEnabled(true);
                     }
                 }
             }
@@ -120,6 +189,26 @@ public class TelaDeAtualizacao extends JFrame {
 
     public static String setHtmlFormat(String[] str) {
         return "<html><body>" + str + "</body></html>";
+    }
+
+    public static void atualizarCampos(String[] strId) {
+        try {
+            Connection conexao = MySQLConnector.conectar();
+            String strSqlAtualizarCampos = "select * from `db_senac`.`tbl_senac` where id = " + strId + ";";
+            Statement stmSqlAtualizarCampos = conexao.createStatement();
+            ResultSet rstSqlAtualizarCampos = stmSqlAtualizarCampos.executeQuery(strSqlAtualizarCampos);
+            if(rstSqlAtualizarCampos.next()){
+                txtNome.setText(rstSqlAtualizarCampos.getString("nome"));
+                txtNomeCarregado = txtNome.getText();
+                txtEmail.setText(rstSqlAtualizarCampos.getString("email"));
+                txtEmailCarregado = txtEmail.getText();
+            } else {
+                notificarUsuario("Ops! ");
+            }
+        } catch (Exception e){
+            notificarUsuario();
+            System.err.println("Erro " + e );
+        }
     }
 
     public static TelaDeAtualizacao appTelaDeAtualizacao;
